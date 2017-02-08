@@ -1,16 +1,74 @@
-function [ output_args ] = sim_main(  )
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+function [] = sim_main()
+%
+%   Detail_joint_ed expl_joint_anation goes here
+num = 15;
+Theta1 = linspace(-pi/2, pi/2, num);
+Theta2 = linspace(-pi/2, pi/2, num);
+Theta3 = linspace(-pi/2, pi/2, num);
 
-trans_1_joints_xy = [L*sin(Theta1);
-    L*cos(Theta1)];
+l_joint_ = 10;
+init_xy = [0, 0;
+    0, l_joint_;
+    0, l_joint_*2;
+    0, l_joint_*3];
 
-trans_2_joints_xy = [ L*sin(Theta1) + L*cos(Theta1)*sin(Theta2) + L*cos(Theta2)*sin(Theta1);
-    L*cos(Theta1) + L*cos(Theta1)*cos(Theta2) - L*sin(Theta1)*sin(Theta2) ]; 
+plot(init_xy(:,1), init_xy(:,2), 'b.-')
+axis([-l_joint_*4 l_joint_*4 -l_joint_*2 l_joint_*4])
+hold on
 
-trans_3_joints_xy = [ L*sin(Theta1) + L*cos(Theta1)*sin(Theta2) + L*cos(Theta2)*sin(Theta1) + L*cos(Theta3)*(cos(Theta1)*sin(Theta2) + cos(Theta2)*sin(Theta1)) + L*sin(Theta3)*(cos(Theta1)*cos(Theta2) - sin(Theta1)*sin(Theta2));
-    L*cos(Theta1) + L*cos(Theta1)*cos(Theta2) - L*sin(Theta1)*sin(Theta2) + L*cos(Theta3)*(cos(Theta1)*cos(Theta2) - sin(Theta1)*sin(Theta2)) - L*sin(Theta3)*(cos(Theta1)*sin(Theta2) + cos(Theta2)*sin(Theta1)) ];
+for i = 1:num
+    trans_1_joints_xy = [l_joint_*sin(Theta1(i));
+        l_joint_*cos(Theta1(i))];
+    
+    for j = 1:num
+        trans_2_joints_xy = [ l_joint_*sin(Theta1(i)) + l_joint_*cos(Theta1(i))*sin(Theta2(j)) + l_joint_*cos(Theta2(j))*sin(Theta1(i));
+            l_joint_*cos(Theta1(i)) + l_joint_*cos(Theta1(i))*cos(Theta2(j)) - l_joint_*sin(Theta1(i))*sin(Theta2(j)) ];
+        
+        for k = 1:num
+            trans_3_joints_xy = [ l_joint_*sin(Theta1(i)) + l_joint_*cos(Theta1(i))*sin(Theta2(j)) + l_joint_*cos(Theta2(j))*sin(Theta1(i)) + l_joint_*cos(Theta3(k))*(cos(Theta1(i))*sin(Theta2(j)) + cos(Theta2(j))*sin(Theta1(i))) + l_joint_*sin(Theta3(k))*(cos(Theta1(i))*cos(Theta2(j)) - sin(Theta1(i))*sin(Theta2(j)));
+                l_joint_*cos(Theta1(i)) + l_joint_*cos(Theta1(i))*cos(Theta2(j)) - l_joint_*sin(Theta1(i))*sin(Theta2(j)) + l_joint_*cos(Theta3(k))*(cos(Theta1(i))*cos(Theta2(j)) - sin(Theta1(i))*sin(Theta2(j))) - l_joint_*sin(Theta3(k))*(cos(Theta1(i))*sin(Theta2(j)) + cos(Theta2(j))*sin(Theta1(i))) ];
+            
+            conveyor_xy =[-l_joint_*4 l_joint_*1.5;
+                l_joint_*4 l_joint_*1.5];
+            
+            plot_xy = [ 0, 0;
+                trans_1_joints_xy(1), trans_1_joints_xy(2);
+                trans_2_joints_xy(1), trans_2_joints_xy(2);
+                trans_3_joints_xy(1), trans_3_joints_xy(2)];
+            
+            plot(plot_xy(:,1), plot_xy(:,2), 'r.-', conveyor_xy(:,1), conveyor_xy(:,2), 'k--')
+            axis([-l_joint_*4 l_joint_*4 -l_joint_*2 l_joint_*4])
+            %plot_simple_conveyor(l_joint_)
+            hold off
+            drawnow
+            
+        end
+    end
+end
 
 
 end
+
+
+function plot_simple_conveyor(L)
+dots = [-L*4 L*1.5;
+    L*4 L*1.5];
+plot(dots(:,1), dots(:,2), 'b--')
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
