@@ -1,12 +1,14 @@
 function [ output_args ] = sim_main_test()
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
-ni = 5;
-nj = 21;
+ni = 11;
+nj = 11;
 l_joint = 10;
 
-theta_1_joint = linspace(-pi/2,pi/2,ni);
-theta_2_joint = linspace(-pi/2,pi/2,nj);
+theta_1_joint = linspace(-pi,pi,ni);
+theta_2_joint = linspace(-pi,pi,nj);
+
+cla
 
 for i = 1:ni
     T1 = trans_Joint( theta_1_joint(i), l_joint );
@@ -28,7 +30,7 @@ for i = 1:ni
             px2 = [T2(1,end), T3(1,end)];
             py2 = [T2(2,end), T3(2,end)];
             plot(T3(1,end), T3(2,end), 'g.')
-            %drawnow
+            drawnow
         end
     end
 end

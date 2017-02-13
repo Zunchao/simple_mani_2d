@@ -1,7 +1,9 @@
 function [] = sim_main()
 %
 %   Detail_joint_ed expl_joint_anation goes here
-num = 15;
+cla
+
+num = 25;
 Theta1 = linspace(-pi/2, pi/2, num);
 Theta2 = linspace(-pi/2, pi/2, num);
 Theta3 = linspace(-pi/2, pi/2, num);
