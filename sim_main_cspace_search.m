@@ -1,6 +1,6 @@
-function [] = sim_main_dev()
-%
-%   Detail_joint_ed expl_joint_anation goes here
+function [] = sim_main_cspace_search()
+% serch the c-space and corresponding work space
+%  
 clf
 
 theta_range_ = pi/2;
@@ -39,10 +39,6 @@ step_angle_ = pi/20;
 iteration = 1;
 tree_index_ = 1;
 
-plot_xy_mat = arm_vertex_mat(l_joint_, Q_init_);
-plotf_xy_mat = arm_vertex_mat(l_joint_, Q_init_+step_angle_);
-dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
-
 while (iteration < 10000)%iteration<=n_iteration)
     random_angles_ = unifrnd(-theta_range_,theta_range_,1,3);
     
@@ -55,9 +51,6 @@ while (iteration < 10000)%iteration<=n_iteration)
     Q_new_ = cal_new_(Q_near_, random_angles_, step_angle_);
     
     plot_xy_mat = arm_vertex_mat(l_joint_, Q_new_);
-    %plotf_xy_mat = arm_vertex_mat(l_joint_, Q_near_);
-    %dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
-    
     subplot(1,2,1)
     plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r')
     axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
@@ -74,8 +67,8 @@ while (iteration < 10000)%iteration<=n_iteration)
     
     dis_end = sqrt(sum((plot_xy_mat(4,:)-P_goal_conveyor).^2));
     if dis_end < 1
-        [q_trees_, n_start] = find_each_arm(qtree_mat_,tree_index_+1,Q_tree_)
-        size(q_trees_)
+        [q_trees_, n_start] = find_each_arm(qtree_mat_,tree_index_+1,Q_tree_);
+        
         subplot(1,2,1)
         for k=1:n_start            
             plot_xy_mat = arm_vertex_mat(l_joint_, q_trees_(n_start-k+1,:));
