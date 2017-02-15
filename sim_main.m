@@ -52,11 +52,6 @@ end
 end
 
 
-function plot_simple_conveyor(L)
-dots = [-L*4 L*1.5;
-    L*4 L*1.5];
-plot(dots(:,1), dots(:,2), 'b--')
-end
 
 
 
