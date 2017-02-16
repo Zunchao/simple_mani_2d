@@ -1,6 +1,11 @@
 function [] = sim_main_connected()
 % search the space and connect to the goal
-%
+% output the paths both ws and Cs
+% naive and slow
+% just search all the space
+
+% 20170216
+
 clf
 
 theta_range_ = pi/2;
@@ -73,7 +78,8 @@ while (iteration < 10000)
     qtree_mat_(n, tree_index_+1) = 1;
     
     dis_end = sqrt(sum((plot_xy_mat(4,:)-P_goal_conveyor).^2));
-    if dis_end < 1
+    
+    if dis_end < 2
         [q_trees_, n_start] = find_each_arm(qtree_mat_,tree_index_+1,Q_tree_)
         
         for k=1:n_start

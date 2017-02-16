@@ -6,8 +6,6 @@ clf
 theta_range_ = pi/2;
 l_joint_ = 10;
 
-
-
 conveyor_xy =[-l_joint_*4 l_joint_*1.5;
     l_joint_*4 l_joint_*1.5];
 
@@ -35,6 +33,7 @@ title('C-space')
 
 P_goal_arm = start_xy_mat(4,:);
 dis_end = sqrt(sum((P_goal_arm-P_goal_conveyor).^2));
+dis_end_mat(1) = dis_end;
 
 Q_tree_ = Q_init_;
 step_angle_ = pi/50;
@@ -45,12 +44,11 @@ plot_xy_mat = arm_vertex_mat(l_joint_, Q_init_);
 plotf_xy_mat = arm_vertex_mat(l_joint_, Q_init_+step_angle_);
 %dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
 
-random_angles_1 = unifrnd(-theta_range_,theta_range_);
+random_angles_1 = unifrnd(-theta_range_+pi/2,theta_range_+pi/2);
 random_angles_2 = unifrnd(-theta_range_,theta_range_);
 random_angles_3 = unifrnd(-theta_range_,theta_range_);
 
 theta_range_box = theta_range_*2;
-
 
 while (iteration < 10000)
     
@@ -70,21 +68,42 @@ while (iteration < 10000)
     dis_end_second = sqrt(sum((plot_xy_mat_near(end,:)-P_goal_conveyor).^2));
     dis_end = sqrt(sum((plot_xy_mat(end,:)-P_goal_conveyor).^2));
     
-    dis_end_mat(iteration) = dis_end;
-    [min_dis_end,m] = min(dis_end_mat);
+    dis_end_mat(iteration+1) = dis_end;
+    [min_dis_end,m] = min(dis_end_mat(1:end-1));
     
-    f_min = sum(Q_new_-step_angle_>=-theta_range_);
-    f_max = sum(Q_new_+step_angle_<= theta_range_);
-    f_dis = (dis_end < dis_end_second);
+    f_min_new = (Q_new_(1)-step_angle_ > -theta_range_+pi/2) && ...
+        (Q_new_(2)-step_angle_*2 > -theta_range_) && ...
+        (Q_new_(3)-step_angle_*3 > -theta_range_);
+    f_max_new = (Q_new_(1)+step_angle_ < theta_range_+pi/2) && ...
+        (Q_new_(2)+step_angle_*2 < theta_range_) && ...
+        (Q_new_(3)+step_angle_*3 < theta_range_);
     
-    if  f_dis %&& (f_min==3) && (f_max==3)
-        random_angles_1 = unifrnd(Q_new_(1)-step_angle_,Q_new_(1)+step_angle_);
-        random_angles_2 = unifrnd(Q_new_(2)-step_angle_,Q_new_(2)+step_angle_);
-        random_angles_3 = unifrnd(Q_new_(3)-step_angle_,Q_new_(3)+step_angle_);
+    f_min_near = (Q_tree_(m,1)-step_angle_ > -theta_range_+pi/2) && ...
+        (Q_tree_(m,2)-step_angle_*2 > -theta_range_) && ...
+        (Q_tree_(m,3)-step_angle_*3 > -theta_range_);
+    f_max_near = (Q_tree_(m,1)+step_angle_ < theta_range_+pi/2) && ...
+        (Q_tree_(m,2)+step_angle_*2 < theta_range_) && ...
+        (Q_tree_(m,3)+step_angle_*3 < theta_range_);
+    
+    f_min_max = f_min_new && f_max_new && f_min_near && f_max_near;
+    
+    f_dis = (dis_end < min_dis_end);
+    
+    if  f_dis 
+        [random_angles_1, random_angles_2, random_angles_3] = ...
+            random_angles_joint(step_angle_, Q_new_(1), Q_new_(2), Q_new_(3));
+        %random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
+        %random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
+        %random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
+        %disp('new ...')
     else
-        random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_,Q_tree_(m,1)+step_angle_);
-        random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_,Q_tree_(m,2)+step_angle_);
-        random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_,Q_tree_(m,3)+step_angle_);
+        [random_angles_1, random_angles_2, random_angles_3] = ...
+            random_angles_joint(step_angle_, Q_tree_(m,1), Q_tree_(m,2), Q_tree_(m,3));
+        %random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
+        %random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*2, Q_tree_(m,2)+step_angle_*2);
+        %random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*3, Q_tree_(m,3)+step_angle_*3);
+        %disp('near ...')
+    
     end
     
     if (plot_xy_mat(:,2)<l_joint_*1.45)
@@ -135,7 +154,7 @@ while (iteration < 10000)
     end
     
 end
-
+iteration
 
 %{
 while (iteration < 10000)%iteration<=n_iteration)
@@ -219,6 +238,54 @@ end
 
 end
 
+
+
+
+function [theta1, theta2, theta3] = random_angles_joint(delta_th, theta11, theta21, theta31)
+% joint 1 state search range
+if theta11 - delta_th < 0
+    theta11 = 0;
+else
+    theta11 = theta11 - delta_th;
+end
+
+if theta11 + delta_th > pi
+    theta12 = pi;
+else
+    theta12 = theta11 + delta_th;
+end
+
+% joint 2 state search range
+if theta21 - delta_th*2 < -pi/2
+    theta21 = -pi/2;
+else
+    theta21 = theta21 - delta_th*2;
+end
+
+if theta21 + delta_th*2 > pi/2
+    theta22 = pi/2;
+else
+    theta22 = theta21 + delta_th*2;
+end
+
+% joint 3 state search range
+if theta31 - delta_th*3 < -pi/2
+    theta31 = -pi/2;
+else
+    theta31 = theta31 - delta_th*3;
+end
+
+if theta31 + delta_th*3 > pi/2
+    theta32 = pi/2;
+else
+    theta32 = theta31 + delta_th*3;
+end
+
+theta1 = unifrnd(theta11, theta12);
+theta2 = unifrnd(theta21, theta22);
+theta3 = unifrnd(theta31, theta32);
+
+end
 
 
 
