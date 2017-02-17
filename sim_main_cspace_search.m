@@ -26,7 +26,7 @@ hold on
 title('C-space')
 
 Q_tree_ = Q_init_;
-step_angle_ = pi/10;
+step_angle_ = pi/100;
 iteration = 1;
 tree_index_ = 1;
 

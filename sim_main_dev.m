@@ -44,11 +44,13 @@ plot_xy_mat = arm_vertex_mat(l_joint_, Q_init_);
 plotf_xy_mat = arm_vertex_mat(l_joint_, Q_init_+step_angle_);
 %dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
 
-random_angles_1 = unifrnd(-theta_range_+pi/2,theta_range_+pi/2);
+random_angles_1 = unifrnd(-theta_range_-pi/2,theta_range_-pi/2);
 random_angles_2 = unifrnd(-theta_range_,theta_range_);
 random_angles_3 = unifrnd(-theta_range_,theta_range_);
 
 theta_range_box = theta_range_*2;
+
+P_obstacles_ = [(P_goal_conveyor(1)-30)/2, P_goal_conveyor(2)/2];
 
 while (iteration < 10000)
     
@@ -65,23 +67,26 @@ while (iteration < 10000)
     plot_xy_mat_near = arm_vertex_mat(l_joint_, Q_near_);
     plot_xy_mat = arm_vertex_mat(l_joint_, Q_new_);
     
-    dis_end_second = sqrt(sum((plot_xy_mat_near(end,:)-P_goal_conveyor).^2));
+    %dis_end_second = sqrt(sum((plot_xy_mat_near(end,:)-P_goal_conveyor).^2));
     dis_end = sqrt(sum((plot_xy_mat(end,:)-P_goal_conveyor).^2));
     
     dis_end_mat(iteration+1) = dis_end;
     [min_dis_end,m] = min(dis_end_mat(1:end-1));
     
-    f_min_new = (Q_new_(1)-step_angle_ > -theta_range_+pi/2) && ...
+    % set the search space not out of each joint range
+    % WARNING: 
+    %          actually useless in the following condition if
+    f_min_new = (Q_new_(1)-step_angle_ > -theta_range_-pi/2) && ...
         (Q_new_(2)-step_angle_*2 > -theta_range_) && ...
         (Q_new_(3)-step_angle_*3 > -theta_range_);
-    f_max_new = (Q_new_(1)+step_angle_ < theta_range_+pi/2) && ...
+    f_max_new = (Q_new_(1)+step_angle_ < theta_range_-pi/2) && ...
         (Q_new_(2)+step_angle_*2 < theta_range_) && ...
         (Q_new_(3)+step_angle_*3 < theta_range_);
     
-    f_min_near = (Q_tree_(m,1)-step_angle_ > -theta_range_+pi/2) && ...
+    f_min_near = (Q_tree_(m,1)-step_angle_ > -theta_range_-pi/2) && ...
         (Q_tree_(m,2)-step_angle_*2 > -theta_range_) && ...
         (Q_tree_(m,3)-step_angle_*3 > -theta_range_);
-    f_max_near = (Q_tree_(m,1)+step_angle_ < theta_range_+pi/2) && ...
+    f_max_near = (Q_tree_(m,1)+step_angle_ < theta_range_-pi/2) && ...
         (Q_tree_(m,2)+step_angle_*2 < theta_range_) && ...
         (Q_tree_(m,3)+step_angle_*3 < theta_range_);
     
@@ -89,27 +94,28 @@ while (iteration < 10000)
     
     f_dis = (dis_end < min_dis_end);
     
-    if  f_dis 
-        [random_angles_1, random_angles_2, random_angles_3] = ...
-            random_angles_joint(step_angle_, Q_new_(1), Q_new_(2), Q_new_(3));
-        %random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
-        %random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
-        %random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
-        %disp('new ...')
-    else
-        [random_angles_1, random_angles_2, random_angles_3] = ...
-            random_angles_joint(step_angle_, Q_tree_(m,1), Q_tree_(m,2), Q_tree_(m,3));
-        %random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
-        %random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*2, Q_tree_(m,2)+step_angle_*2);
-        %random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*3, Q_tree_(m,3)+step_angle_*3);
-        %disp('near ...')
+    f_end_ = (plot_xy_mat(end,1)<(P_obstacles_(1)+1)) && ...
+        (plot_xy_mat(end,1)>(P_obstacles_(1)-1)) && ...
+        (plot_xy_mat(end,2)>(P_obstacles_(2)-1))&& ...
+        (plot_xy_mat(end,2)>(P_obstacles_(2)-1)); 
+        
+    f_end_ = ~f_end_;
     
+    if  f_dis && f_end_
+        random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
+        random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
+        random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
+    else
+        random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
+        random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*2, Q_tree_(m,2)+step_angle_*2);
+        random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*3, Q_tree_(m,3)+step_angle_*3);
     end
+    
     
     if (plot_xy_mat(:,2)<l_joint_*1.45)
         
         subplot(1,2,1)
-        plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r')
+        plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r', P_obstacles_(1), P_obstacles_(2), 'ko')
         axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
         
         subplot(1,2,2)
@@ -130,7 +136,7 @@ while (iteration < 10000)
                 % draw the final arm path
                 subplot(1,2,1)
                 plot_xy_mat = arm_vertex_mat(l_joint_, q_trees_(n_start-k+1,:));
-                plot(plot_xy_mat(:,1),plot_xy_mat(:,2),'g.-');
+                plot(plot_xy_mat(:,1),plot_xy_mat(:,2),'g.-', P_obstacles_(1), P_obstacles_(2), 'ko');
                 axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
                 drawnow
                 pause(0.2)
@@ -155,6 +161,9 @@ while (iteration < 10000)
     
 end
 iteration
+
+end
+
 
 %{
 while (iteration < 10000)%iteration<=n_iteration)
@@ -236,7 +245,6 @@ for i = 1:num
 end
 %}
 
-end
 
 
 
