@@ -6,7 +6,7 @@ clf
 theta_range_ = pi/2;
 l_joint_ = 10;
 
-Theta1 = -pi/2;
+Theta1 = 0;
 Theta2 = 0;
 Theta3 = 0;
 
@@ -21,7 +21,7 @@ title('Work space')
 
 subplot(1,2,2)
 plot3(Q_init_(1,1), Q_init_(1,2), Q_init_(1,3), 'bo')
-axis([-theta_range_ theta_range_ -theta_range_ theta_range_ -theta_range_ theta_range_])
+axis([0 pi -theta_range_ theta_range_ -theta_range_ theta_range_])
 hold on
 title('C-space')
 
@@ -32,7 +32,7 @@ tree_index_ = 1;
 
 while (iteration < 1000)
     %random_angles_ = unifrnd(-theta_range_,theta_range_,1,3);
-    random_angles_1 = unifrnd(-theta_range_-pi/2,theta_range_-pi/2);
+    random_angles_1 = unifrnd(theta_range_-pi/2,theta_range_+pi/2);
     random_angles_2 = unifrnd(-theta_range_,theta_range_);
     random_angles_3 = unifrnd(-theta_range_,theta_range_);
     random_angles_ = [random_angles_1, random_angles_2, random_angles_3];
@@ -52,7 +52,7 @@ while (iteration < 1000)
     subplot(1,2,2)
     qnew_ = [Q_near_;Q_new_];
     plot3(qnew_(:,1), qnew_(:,2), qnew_(:,3), 'r-')
-    axis([-theta_range_-pi/2 theta_range_-pi/2 -theta_range_ theta_range_ -theta_range_ theta_range_])
+    axis([theta_range_-pi/2 theta_range_+pi/2 -theta_range_ theta_range_ -theta_range_ theta_range_])
     box on
     drawnow
     

@@ -37,15 +37,13 @@ ay = abs(P_start(1,2)-P_goal(1,2))+5;
 rax = rand(1)*ax+min([P_start(1,1),P_goal(1,1)]);
 ray = rand(1)*ay+min([P_start(1,2),P_goal(1,2)]);
 
-rax = unifrnd(P_start(1,1), P_goal(1,1));
-ray = unifrnd(P_start(1,2), P_goal(1,2));
+%rax = unifrnd(P_start(1,1), P_goal(1,1));
+%ray = unifrnd(P_start(1,2), P_goal(1,2));
 
 Q_rand_ = [rax, ray];
 while (dis_end > step_)%iteration<=n_iteration)
     flag_new =1;
     flag_ob = 1;
-    
-    
     
     for j = 1:size(Q_init_,1)
         dis_1_(j) = sqrt(sum((Q_rand_(1,:)-Q_init_(j,:)).^2));
@@ -64,8 +62,13 @@ while (dis_end > step_)%iteration<=n_iteration)
     Q_new_2_(1) = Q_near_2_(1) + step_*cos(move_direction_2_);
     Q_new_2_(2) = Q_near_2_(2) + step_*sin(move_direction_2_);
     
-    rax = unifrnd(P_start(1,1), P_goal(1,1));
+    rax = unifrnd(P_goal(1,1), P_start(1,1));
     ray = unifrnd(P_start(1,2), P_goal(1,2));
+    
+    %rax = unifrnd(max(P_goal(1,1), P_start(1,1))/2-2,max(P_goal(1,1), P_start(1,1))/2+2);
+    %ray = unifrnd(max(P_goal(1,2), P_start(1,2))/2-5,max(P_goal(1,2), P_start(1,2))/2+5);
+    
+    
     Q_rand_ = [rax, ray];
     
     
@@ -79,7 +82,7 @@ while (dis_end > step_)%iteration<=n_iteration)
         if fnew1
             if Q_new_1_(2)>(P_obstacles(i,2)-step_)
                 Q_new_1_f = Q_near_1_(1);
-                Q_new_1_(1) = Q_new_1_f-step_/2;
+                Q_new_1_(1) = Q_new_1_f+step_/2;
                 Q_new_1_(2) = Q_near_1_(2)-step_;
                 
                 rax = unifrnd(Q_new_1_(1,1), Q_new_1_(1,1)+5);
@@ -91,7 +94,7 @@ while (dis_end > step_)%iteration<=n_iteration)
         if fnew2
             if Q_new_2_(2)>(P_obstacles(i,2)-step_)
                 Q_new_2_f = Q_near_2_(1);
-                Q_new_2_(1) = Q_new_2_f+step_/2;
+                Q_new_2_(1) = Q_new_2_f-step_/2;
                 Q_new_2_(2) = Q_near_2_(2)-step_;
                 
                 rax = unifrnd(Q_new_2_(1,1), Q_new_2_(1,1)+5);

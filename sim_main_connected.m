@@ -11,12 +11,12 @@ clf
 theta_range_ = pi/2;
 l_joint_ = 10;
 
-conveyor_xy =[-l_joint_*4 l_joint_*1.5;
-    l_joint_*4 l_joint_*1.5];
+conveyor_xy =[-l_joint_*4 l_joint_*1.8;
+    l_joint_*4 l_joint_*1.8];
 
-P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.5];
+P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.8];
 
-Theta1 = -pi/2;
+Theta1 = 0;
 Theta2 = 0;
 Theta3 = 0;
 
@@ -49,7 +49,10 @@ plotf_xy_mat = arm_vertex_mat(l_joint_, Q_init_+step_angle_);
 %dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
 
 while (iteration < 10000)
-    random_angles_ = unifrnd(-theta_range_,theta_range_,1,3);
+    random_angles_1 = unifrnd(theta_range_-pi/2,theta_range_+pi/2);
+    random_angles_2 = unifrnd(-theta_range_,theta_range_);
+    random_angles_3 = unifrnd(-theta_range_,theta_range_);
+    random_angles_ = [random_angles_1, random_angles_2, random_angles_3];
     
     for j = 1:iteration
         dis_(j) = sum((random_angles_ - Q_tree_(j,:)).^2);
@@ -70,7 +73,7 @@ while (iteration < 10000)
     subplot(1,2,2)
     qnew_ = [Q_near_;Q_new_];
     plot3(qnew_(:,1), qnew_(:,2), qnew_(:,3), 'r-')
-    axis([-theta_range_ theta_range_ -theta_range_ theta_range_ -theta_range_ theta_range_])
+    axis([0 pi -theta_range_ theta_range_ -theta_range_ theta_range_])
     box on
     drawnow
     

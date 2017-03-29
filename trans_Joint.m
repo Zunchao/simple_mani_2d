@@ -10,8 +10,8 @@ T2 = [1 0 0;
 
 T = R1*T2;
 %}
-T = [cos(Theta) sin(Theta) L*sin(Theta);
-    -sin(Theta) cos(Theta) L*cos(Theta);
+T = [cos(Theta) sin(Theta) L*cos(Theta);
+    -sin(Theta) cos(Theta) L*sin(Theta);
     0 0 1];
 end
 

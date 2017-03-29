@@ -9,10 +9,10 @@ clf
 theta_range_ = pi/2;
 l_joint_ = 10;
 
-Q_start_ = [-pi/2, 0, 0];
+Q_start_ = [0, 0, 0];
 start_xy_mat = arm_vertex_mat(l_joint_, Q_start_);
 
-Q_goal_ = unifrnd(-theta_range_,theta_range_,1,3);
+Q_goal_ = unifrnd(0,pi,1,3);
 goal_xy_mat = arm_vertex_mat(l_joint_, Q_goal_);
 
 subplot(1,2,1)

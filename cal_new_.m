@@ -3,8 +3,13 @@ function new_angles_ = cal_new_(current_angles_, random_angels_, step_angle_)
 inum = size(random_angels_,2);
 
 delta_angle = random_angels_ - current_angles_;
+%trans_3_joints_xy_jacobian = trans3jointsxy_jacobian(10, delta_angle(1),delta_angle(2),delta_angle(3))
+%xdata=xdata'
+%trans_3_joints_xy_jacobian=trans_3_joints_xy_jacobian'
+%norm_del = trans_3_joints_xy_jacobian*xdata
 norm_del = delta_angle/norm(delta_angle);
-new_angles_ = current_angles_ + norm_del*step_angle_;
+%minval=min([step_angle_,norm(delta_angle)]);
+new_angles_ = current_angles_ + min([step_angle_,norm(delta_angle)])*norm_del;
 
 %{
 for i = 1:inum
@@ -16,4 +21,3 @@ for i = 1:inum
 end
 %}
 end
-
