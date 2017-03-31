@@ -1,4 +1,4 @@
-function [] = sim_main_rrt_inTSR()
+function [] = sim_main_rrt_basic()
 % reach the goal on the conveyor, in a faster way
 % more efficient, search space optimized by
 % comparing the distance of new node and
@@ -73,54 +73,58 @@ while (dis_end>f_dis_end/2)
     [min_dis_,n] = min(dis_);
     Q_near_ = Q_tree_2(n,:);
     
-    Q_new_ = cal_new_(Q_near_, random_angles_, step_angle_)
+    Q_new_ = cal_new_(Q_near_, random_angles_, step_angle_);
     
-    Q_new_ = constrainConfig(Q_near_,Q_new_, P_goal_conveyor,step_angle_)
+    %Q_new_ = constrainConfig(Q_near_,Q_new_, P_goal_conveyor,step_angle_);
     
-    if ~isempty(Q_new_)
-        plot_xy_mat = arm_vertex_mat(l_joint_, Q_new_);
-        dis_end = sqrt(sum((plot_xy_mat(end,:)-P_goal_conveyor).^2));
+    
+    plot_xy_mat = arm_vertex_mat(l_joint_, Q_new_);
+    dis_end = sqrt(sum((plot_xy_mat(end,:)-P_goal_conveyor).^2));
+    
+    frange1=plot_xy_mat(:,2)<P_goal_conveyor(2);
+    frange2=plot_xy_mat(end,2)>P_goal_conveyor(2)-1;
+    frange3=plot_xy_mat(end,1)>P_goal_conveyor(1)-1;
+    
+    if (sum(frange1)==4)&&(frange2)&&(frange3)
         
-        if (plot_xy_mat(:,2)<P_goal_conveyor(2))
-            
-            subplot(1,2,1)
-            plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r')
-            axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
-            
-            subplot(1,2,2)
-            qnew_ = [Q_near_;Q_new_];
-            plot3(qnew_(:,1), qnew_(:,2), qnew_(:,3), 'r-')
-            axis([0 pi -pi pi -pi pi])
-            box on
-            drawnow
-            
-            Q_tree_2 = [Q_tree_2; Q_new_];
-            qtree_mat_2(n, tree_index_+1) = 1;
-            iterationc=iterationc+1;
-            tree_index_ = tree_index_+1;            
-            end
-            if dis_end < f_dis_end
-                [q_trees_, n_start] = find_each_arm(qtree_mat_2,tree_index_,Q_tree_2);
-                size(q_trees_)
-                for k=1:n_start
-                    % draw the final arm path
-                    subplot(1,2,1)
-                    path_xy_mat = arm_vertex_mat(l_joint_, q_trees_(n_start-k+1,:));
-                    plot(path_xy_mat(:,1),path_xy_mat(:,2),'g.-');
-                    %axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
-                    drawnow
-                    %pause(0.2)
-                    %hold off
-                    
-                    % draw the final jointstate path
-                    subplot(1,2,2)
-                    if k < n_start
-                        qtree_2points = [q_trees_(n_start-k+1,:); q_trees_(n_start-k,:)];
-                        plot3(qtree_2points(:,1), qtree_2points(:,2), qtree_2points(:,3), 'g.-')
-                    end
+        subplot(1,2,1)
+        plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r')
+        axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
+        
+        subplot(1,2,2)
+        qnew_ = [Q_near_;Q_new_];
+        plot3(qnew_(:,1), qnew_(:,2), qnew_(:,3), 'r-')
+        axis([0 pi -pi pi -pi pi])
+        box on
+        drawnow
+        
+        Q_tree_2 = [Q_tree_2; Q_new_];
+        qtree_mat_(n, tree_index_+1) = 1;
+        iterationc=iterationc+1;
+        tree_index_ = tree_index_+1;        
+        end
+        if dis_end <= f_dis_end
+            [q_trees_, n_start] = find_each_arm(qtree_mat_,tree_index_,Q_tree_2);
+            size(q_trees_)
+            for k=1:n_start
+                % draw the final arm path
+                subplot(1,2,1)
+                path_xy_mat = arm_vertex_mat(l_joint_, q_trees_(n_start-k+1,:));
+                plot(path_xy_mat(:,1),path_xy_mat(:,2),'g.-');
+                %axis([-l_joint_*4 l_joint_*4 -l_joint_*4 l_joint_*4])
+                drawnow
+                %pause(0.2)
+                %hold off
+                
+                % draw the final jointstate path
+                subplot(1,2,2)
+                if k < n_start
+                    qtree_2points = [q_trees_(n_start-k+1,:); q_trees_(n_start-k,:)];
+                    plot3(qtree_2points(:,1), qtree_2points(:,2), qtree_2points(:,3), 'g.-')
                 end
-                break
             end
+            
+            break
         
     end
     random_angles_1 = unifrnd(0,pi);
@@ -226,21 +230,6 @@ for k=1:n_start
 end
 
 tree_halfpath_=qtrees_;
-
-end
-
-%%
-function Q_new_ = extent_new_(tnear_, prand_, ori_rand)
-i=1;
-pi(i,:)=tnear_(1,4:5);
-deltapi=[0,1];
-v=[1,0];
-pd=prand_;
-
-delta_pdi=prand_-abs(dot((prand_-pi(i,:)),deltapi))*deltapi
-vi=delta_pdi-pi(i,:)
-v=vi/norm(vi)
-pi(i+1,:)=pi(i,:)+v*0.01
 
 end
 
