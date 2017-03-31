@@ -9,7 +9,7 @@ l_joint_ = 10;
 conveyor_xy =[-l_joint_*4 l_joint_*1.8;
     l_joint_*4 l_joint_*1.8];
 
-P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.8];
+P_goal_conveyor =[0.9*l_joint_*unifrnd(-2,2) l_joint_*1.8];
 
 Theta1 = 0;
 Theta2 = 0;
@@ -36,7 +36,7 @@ dis_end = sqrt(sum((P_goal_arm-P_goal_conveyor).^2));
 dis_end_mat(1) = dis_end;
 
 Q_tree_ = Q_init_;
-step_angle_ = pi/100;
+step_angle_ = pi/50;
 iteration = 1;
 tree_index_ = 1;
 
@@ -44,7 +44,7 @@ plot_xy_mat = arm_vertex_mat(l_joint_, Q_init_);
 plotf_xy_mat = arm_vertex_mat(l_joint_, Q_init_+step_angle_);
 %dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
 
-random_angles_1 = unifrnd(theta_range_-pi/2,theta_range_+pi/2);
+random_angles_1 = unifrnd(0,pi);
 random_angles_2 = unifrnd(-theta_range_,theta_range_);
 random_angles_3 = unifrnd(-theta_range_,theta_range_);
 
@@ -53,10 +53,11 @@ theta_range_box = theta_range_*2;
 %P_obstacles_ = [(P_goal_conveyor(1)-30)/2, P_goal_conveyor(2)/2];
 P_obstacles_ = [(30-P_goal_conveyor(1))*rand(1)+P_goal_conveyor(1)+2, P_goal_conveyor(2)*rand(1)];
 
+
 while (iteration < 10000)
     
-    if (plot_xy_mat(end,1) > (P_obstacles_(1)-2))%%&&(plot_xy_mat(end,1) > (P_obstacles_(1)-1))
-        P_goal_ = [P_obstacles_(1)-2 P_obstacles_(2)-0.5];
+    if (plot_xy_mat(end,1) > (P_obstacles_(1)-1))%%&&(plot_xy_mat(end,1) > (P_obstacles_(1)-1))
+        P_goal_ = [P_obstacles_(1)-1 P_obstacles_(2)-0.5];
         nx=1;
     else
         P_goal_ = P_goal_conveyor;
@@ -110,30 +111,39 @@ while (iteration < 10000)
         (Q_tree_(m,3)+step_angle_*9 < theta_range_*2);
     
     f_min_max = f_min_new && f_max_new && f_min_near && f_max_near;
-  
-
-        if  f_dis
-            random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
-            random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
-            random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
-        else
-            random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
-            random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*6, Q_tree_(m,2)+step_angle_*6);
-            random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*9, Q_tree_(m,3)+step_angle_*9);
-        end
-
     
-    ob_threshold = 0.5;%<1 >0.1
-    if (plot_xy_mat(end,1) > (P_obstacles_(1) - ob_threshold))%%&&(plot_xy_mat(end,1) > (P_obstacles_(1)-1))
-        f_endpoint = P_obstacles_(2) - ob_threshold;
+    
+    if  f_dis
+        random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
+        random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
+        random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
     else
-        f_endpoint = P_goal_conveyor(2) - ob_threshold;
+        random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
+        random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*6, Q_tree_(m,2)+step_angle_*6);
+        random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*9, Q_tree_(m,3)+step_angle_*9);
     end
     
+    
+    ob_threshold = 0.5;%<1 >0.1
+%{
+if (plot_xy_mat(end,1) > (P_obstacles_(1) - ob_threshold))
+        f_endpoint = P_goal_conveyor(2) - ob_threshold;
+    else
+        f_endpoint = P_obstacles_(2) - ob_threshold;
+    end
+ %}
+    if (plot_xy_mat(end,1) > (P_obstacles_(1) + ob_threshold))%%&&(plot_xy_mat(end,1) > (P_obstacles_(1)-1))
+        f_endpoint = P_goal_conveyor(2) - ob_threshold;
+    elseif (plot_xy_mat(end,1) < (P_obstacles_(1) - ob_threshold))
+        f_endpoint = P_goal_conveyor(2) - ob_threshold;
+    else
+        f_endpoint = P_obstacles_(2) - ob_threshold;
+    end
+   
     f_endpoint = P_goal_(2) - ob_threshold;
     dis_3 = dot2_lines(plot_xy_mat, P_obstacles_);
     f_dis_3 = sum(dis_3 >= (ob_threshold+0.5));
-    
+
     f_endplot = sum(plot_xy_mat(:,2) < f_endpoint);
     
     if (f_endplot==4)&&(f_dis_3==3)

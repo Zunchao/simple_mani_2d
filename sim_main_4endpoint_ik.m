@@ -1,4 +1,4 @@
-function [] = sim_main_4endpoint()
+function [] = sim_main_4endpoint_ik()
 % rrt for endpoingt and plan for every point on the endpoint path
 %
 clf
@@ -58,7 +58,7 @@ qtree_init=[q_trees_(end,:);qtree_init];
 n_fin=size(qtree_init,1);
 
 for km=1:n_fin
-    % draw the final arm path    
+    % draw the final arm path
     subplot(1,2,1)
     plot_xy_mat = arm_vertex_mat(l_joint_, qtree_init(n_fin-km+1,:));
     plot(plot_xy_mat(:,1),plot_xy_mat(:,2),'g.-', P_obstacles_(1), P_obstacles_(2), 'ko');
@@ -101,6 +101,9 @@ theta_range_box = theta_range_*2;
 dis_end = sqrt(sum((pstart-pgoal).^2));
 dis_end_mat(1)=dis_end;
 
+stop_iteration = 200;
+
+        qtree_mat_(1, 1) = 1;
 while (dis_end > 0.5)
     
     random_angles_ = [random_angles_1, random_angles_2, random_angles_3];
@@ -161,17 +164,17 @@ while (dis_end > 0.5)
         (Q_tree_(m,3)+step_angle_*9 < theta_range_);
     
     f_min_max = f_min_new && f_max_new && f_min_near && f_max_near;
-%}
-        if  f_dis
-            random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
-            random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
-            random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
-        else
-            random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
-            random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*6, Q_tree_(m,2)+step_angle_*6);
-            random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*9, Q_tree_(m,3)+step_angle_*9);
-        end
-
+    %}
+    if  f_dis
+        random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
+        random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
+        random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
+    else
+        random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
+        random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*6, Q_tree_(m,2)+step_angle_*6);
+        random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*9, Q_tree_(m,3)+step_angle_*9);
+    end
+    
     
     dis_3 = dot2_lines(plot_xy_mat, P_obstacles_);
     f_dis_3 = sum(dis_3 >= 1.5);
@@ -199,12 +202,163 @@ while (dis_end > 0.5)
         tree_index_ = tree_index_+1;
         
     end
+    if iteration > stop_iteration
+        break
+    end
+end
+
+if iteration > stop_iteration
+    disp('enter ik loop!')
+    [ q ] = possible_solution_3joint_posigoal_forRRT( pgoal ,qstart(3));
+    for mi=1:2
+        dis_q(mi) = sum((q(mi+1,:) - qstart)).^2;
+    end
+    [minq,mj] = min(dis_q);
+    [q_trees_, n_start] = twoq_merge(qstart,q(2,:), pobs);
+else
+    iteration;
+    [q_trees_, n_start] = find_each_arm(qtree_mat_,tree_index_,Q_tree_);
+    size(q_trees_);
+end
+
+end
+
+
+%%
+function [qtrees_, nstarts] = twoq_merge(Q_start_,Q_goal_, P_obstacles_)
+
+l_joint_ = 10;
+
+start_xy_mat = arm_vertex_mat(l_joint_, Q_start_);
+
+goal_xy_mat = arm_vertex_mat(l_joint_, Q_goal_);
+
+P_start_ = start_xy_mat(end,:);
+P_goal_ = goal_xy_mat(end,:);
+
+Q_start_tree_ = Q_start_;
+Q_goal_tree_ = Q_goal_;
+
+q_trees_goals = Q_start_;
+q_trees_start = Q_goal_;
+qtrees_= [q_trees_goals;q_trees_start];
+nstarts = 2;
+
+step_angle_ = pi/50;
+iteration = 1;
+stree_index_ = 1;
+gtree_index_ = 1;
+
+range_angles_1 = [Q_start_(1), Q_goal_(1)];
+range_angles_2 = [Q_start_(2), Q_goal_(2)];
+range_angles_3 = [Q_start_(3), Q_goal_(3)];
+
+random_angles_1 = unifrnd(min(range_angles_1)-step_angle_, max(range_angles_1)+step_angle_);
+random_angles_2 = unifrnd(min(range_angles_2)-step_angle_, max(range_angles_2)+step_angle_);
+random_angles_3 = unifrnd(min(range_angles_3)-step_angle_, max(range_angles_3)+step_angle_);
+
+
+f_angles_1 = -(Q_start_(1)-Q_goal_(1))/abs(Q_start_(1)-Q_goal_(1));
+f_angles_2 = -(Q_start_(2)-Q_goal_(2))/abs(Q_start_(2)-Q_goal_(2));
+f_angles_3 = -(Q_start_(3)-Q_goal_(3))/abs(Q_start_(3)-Q_goal_(3));
+
+qtree_mat_goal(1,1)=1;
+qtree_mat_start(1,1)=1;
+
+while (iteration < 20000)
     
+    random_angles_ = [random_angles_1, random_angles_2, random_angles_3];
+    
+    for js = 1:stree_index_
+        dis_start_(js) = sum((random_angles_ - Q_start_tree_(js,:)).^2);
+    end
+    
+    for jg = 1:gtree_index_
+        dis_goal_(jg) = sum((random_angles_ - Q_goal_tree_(jg,:)).^2);
+    end
+    
+    [min_dis_start,n] = min(dis_start_);
+    Q_near_start = Q_start_tree_(n,:);
+    Q_new_start = cal_new_(Q_near_start, random_angles_, step_angle_);
+    splot_xy_mat = arm_vertex_mat(l_joint_, Q_new_start);
+    qnew_start = [Q_near_start;Q_new_start];
+    
+    [min_dis_goal,m] = min(dis_goal_);
+    Q_near_goal = Q_goal_tree_(m,:);
+    Q_new_goal = cal_new_(Q_near_goal, random_angles_, step_angle_);
+    gplot_xy_mat = arm_vertex_mat(l_joint_, Q_new_goal);
+    qnew_goal = [Q_near_goal;Q_new_goal];
+    
+    
+    dis_3 = dot2_lines(splot_xy_mat, P_obstacles_);
+    f_dis_s = sum(dis_3 >= 1.5);
+    dis_3 = dot2_lines(gplot_xy_mat, P_obstacles_);
+    f_dis_g = sum(dis_3 >= 1.5);
+    
+    f_endplots = sum(splot_xy_mat(:,2) < 17.8);
+    f_endplotg = sum(gplot_xy_mat(:,2) < 17.8);
+    
+    if (f_endplots==4)&&(f_dis_s==3)
+        
+        subplot(1,2,1)
+        plot(splot_xy_mat(4,1), splot_xy_mat(4,2), 'r')
+        
+        subplot(1,2,2)
+        plot3(qnew_start(:,1), qnew_start(:,2), qnew_start(:,3), 'r-')
+        Q_start_tree_ = [Q_start_tree_; Q_new_start];
+        qtree_mat_start(n, stree_index_+1) = 1;
+        stree_index_ = stree_index_+1;
+    end
+    
+    if (f_endplotg==4)&&(f_dis_g==3)
+        
+        subplot(1,2,1)
+        plot(gplot_xy_mat(4,1), gplot_xy_mat(4,2), 'b')
+        
+        subplot(1,2,2)
+        plot3(qnew_goal(:,1), qnew_goal(:,2), qnew_goal(:,3), 'b-')
+        Q_goal_tree_ = [Q_goal_tree_; Q_new_goal];
+        qtree_mat_goal(m, gtree_index_+1) = 1;
+        gtree_index_ = gtree_index_+1;
+    end
+    
+    dis_Qend = sqrt(sum((Q_new_goal-Q_new_start).^2));
+    %dis_Qend = sqrt(sum((gplot_xy_mat(end,:)-splot_xy_mat(end,:)).^2))
+    if dis_Qend < step_angle_*3
+        [q_trees_start, n_start] = find_each_arm(qtree_mat_start,stree_index_,Q_start_tree_);
+        size(q_trees_start);
+        [q_trees_goal, n_goal] = find_each_arm(qtree_mat_goal,gtree_index_,Q_goal_tree_);
+        nk=size(q_trees_goal,1);
+        for mk=1:nk
+            q_trees_goals(mk,:) = q_trees_goal(nk-mk+1,:);
+        end
+        q_trees_=[q_trees_goals;q_trees_start];
+        n_starts = n_start+n_goal;
+        iteration;
+        break
+    end
+    
+    range_angles_1 = [Q_start_(1), Q_goal_(1)];
+    range_angles_2 = [Q_start_(2), Q_goal_(2)];
+    range_angles_3 = [Q_start_(3), Q_goal_(3)];
+    
+    random_angles_1 = unifrnd(min(range_angles_1)-step_angle_*2, max(range_angles_1)+step_angle_*2);
+    random_angles_2 = unifrnd(min(range_angles_2)-step_angle_*5, max(range_angles_2)+step_angle_*5);
+    random_angles_3 = unifrnd(min(range_angles_3)-step_angle_*5, max(range_angles_3)+step_angle_*5);
+
+    random_angles_1 = unifrnd(0,pi);
+random_angles_2 = unifrnd(-pi,pi);
+random_angles_3 = unifrnd(-pi,pi);
+
+    iteration = iteration + 1;
+    
+    %
 end
-iteration;
-[q_trees_, n_start] = find_each_arm(qtree_mat_,tree_index_,Q_tree_);
-size(q_trees_);
+qtrees_= q_trees_;
+nstarts = n_starts;
 end
+
+
 
 
 %%
@@ -265,7 +419,7 @@ for i=1:3
     c = points4mat(i,1)*points4mat(i+1,2)-points4mat(i+1,1)*points4mat(i,2);
     d = abs(a*dot(1)+b*dot(2)+c);
     d = d/sqrt(a*a+b*b);
-    if ~b
+    if b==0
         ydot = dot(2);
     else
         ydot = -a/b*(dot(1)-points4mat(i,1))+points4mat(i,2);
