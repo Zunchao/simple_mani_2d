@@ -1,4 +1,4 @@
-function [] = sim_main()
+function [] = sim_main_fast()
 % reach the goal on the conveyor, in a faster way
 % more efficient, search space optimized by
 % comparing the distance of new node and 
@@ -12,12 +12,12 @@ clf
 theta_range_ = pi/2;
 l_joint_ = 10;
 
-conveyor_xy =[-l_joint_*4 l_joint_*1.5;
-    l_joint_*4 l_joint_*1.5];
+conveyor_xy =[-l_joint_*4 l_joint_*1.8;
+    l_joint_*4 l_joint_*1.8];
 
-P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.5];
+P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.8];
 
-Theta1 = -pi/2;
+Theta1 = 0;
 Theta2 = 0;
 Theta3 = 0;
 
@@ -50,7 +50,7 @@ plot_xy_mat = arm_vertex_mat(l_joint_, Q_init_);
 plotf_xy_mat = arm_vertex_mat(l_joint_, Q_init_+step_angle_);
 %dis_circle_=sqrt(sum((plot_xy_mat(4,:)-plotf_xy_mat(4,:)).^2))
 
-random_angles_1 = unifrnd(-theta_range_-pi/2,theta_range_-pi/2);
+random_angles_1 = unifrnd(-theta_range_-pi/2,theta_range_+pi/2);
 random_angles_2 = unifrnd(-theta_range_,theta_range_);
 random_angles_3 = unifrnd(-theta_range_,theta_range_);
 
@@ -108,7 +108,7 @@ while (iteration < 10000)
         random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*3, Q_tree_(m,3)+step_angle_*3);
     end
     
-    if (plot_xy_mat(:,2)<l_joint_*1.45)
+    if (plot_xy_mat(:,2)<l_joint_*1.75)
         
         subplot(1,2,1)
         plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r')

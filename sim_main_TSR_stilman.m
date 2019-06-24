@@ -1,7 +1,7 @@
-function [] = sim_main()
+function [] = sim_main_TSR_stilman()
 % reach the goal on the conveyor, in a faster way
 % more efficient, search space optimized by
-% comparing the distance of new node and 
+% comparing the distance of new node and
 % min-distance of the tree without new node
 % ignore the joint range
 
@@ -12,10 +12,10 @@ clf
 theta_range_ = pi/2;
 l_joint_ = 10;
 
-conveyor_xy =[-l_joint_*4 l_joint_*1.5;
-    l_joint_*4 l_joint_*1.5];
+conveyor_xy =[-l_joint_*4 l_joint_*1.8;
+    l_joint_*4 l_joint_*1.8];
 
-P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.5];
+P_goal_conveyor =[l_joint_*unifrnd(-2,2) l_joint_*1.8];
 
 Theta1 = -pi/2;
 Theta2 = 0;
@@ -57,7 +57,9 @@ random_angles_3 = unifrnd(-theta_range_,theta_range_);
 theta_range_box = theta_range_*2;
 
 while (iteration < 10000)
-    
+    random_angles_1 = unifrnd(-theta_range_,theta_range_);
+    random_angles_2 = unifrnd(-theta_range_,theta_range_);
+    random_angles_3 = unifrnd(-theta_range_,theta_range_);
     random_angles_ = [random_angles_1, random_angles_2, random_angles_3];
     
     for j = 1:iteration
@@ -68,6 +70,13 @@ while (iteration < 10000)
     
     Q_new_ = cal_new_(Q_near_, random_angles_, step_angle_);
     
+    [flag_new,qsnew] = fr_new_config(Q_new_,Q_near_,P_goal_conveyor)
+    Q_new_=qsnew;
+    if flag_new
+        Q_tree_ = [Q_tree_; Q_new_];
+        qtree_mat_(n, tree_index_+1) = 1;
+    end
+    
     plot_xy_mat_near = arm_vertex_mat(l_joint_, Q_near_);
     plot_xy_mat = arm_vertex_mat(l_joint_, Q_new_);
     
@@ -77,38 +86,8 @@ while (iteration < 10000)
     dis_end_mat(iteration+1) = dis_end;
     [min_dis_end,m] = min(dis_end_mat(1:end-1));
     
-    % set the search space not out of each joint range
-    % WARNING: 
-    %          actually useless in the following condition if
-    f_min_new = (Q_new_(1)-step_angle_ > -theta_range_-pi/2) && ...
-        (Q_new_(2)-step_angle_*2 > -theta_range_) && ...
-        (Q_new_(3)-step_angle_*3 > -theta_range_);
-    f_max_new = (Q_new_(1)+step_angle_ < theta_range_-pi/2) && ...
-        (Q_new_(2)+step_angle_*2 < theta_range_) && ...
-        (Q_new_(3)+step_angle_*3 < theta_range_);
     
-    f_min_near = (Q_tree_(m,1)-step_angle_ > -theta_range_-pi/2) && ...
-        (Q_tree_(m,2)-step_angle_*2 > -theta_range_) && ...
-        (Q_tree_(m,3)-step_angle_*3 > -theta_range_);
-    f_max_near = (Q_tree_(m,1)+step_angle_ < theta_range_-pi/2) && ...
-        (Q_tree_(m,2)+step_angle_*2 < theta_range_) && ...
-        (Q_tree_(m,3)+step_angle_*3 < theta_range_);
-    
-    f_min_max = f_min_new && f_max_new && f_min_near && f_max_near;
-    
-    f_dis = (dis_end < min_dis_end);
-    
-    if  f_dis %&& f_min_max
-        random_angles_1 = unifrnd(Q_new_(1)-step_angle_, Q_new_(1)+step_angle_);
-        random_angles_2 = unifrnd(Q_new_(2)-step_angle_*2, Q_new_(2)+step_angle_*2);
-        random_angles_3 = unifrnd(Q_new_(3)-step_angle_*3, Q_new_(3)+step_angle_*3);
-    else
-        random_angles_1 = unifrnd(Q_tree_(m,1)-step_angle_, Q_tree_(m,1)+step_angle_);
-        random_angles_2 = unifrnd(Q_tree_(m,2)-step_angle_*2, Q_tree_(m,2)+step_angle_*2);
-        random_angles_3 = unifrnd(Q_tree_(m,3)-step_angle_*3, Q_tree_(m,3)+step_angle_*3);
-    end
-    
-    if (plot_xy_mat(:,2)<l_joint_*1.45)
+    if flag_new==1%(plot_xy_mat(:,2)<l_joint_*1.75)
         
         subplot(1,2,1)
         plot(plot_xy_mat(4,1), plot_xy_mat(4,2), 'r')
@@ -158,6 +137,63 @@ while (iteration < 10000)
 end
 iteration
 
+end
+
+
+
+function [flag_,qs2] = fr_new_config(qs,qnear,pgoal)
+qr=qs;
+delta_xerror = computertaskerror(qs,pgoal);
+norm(delta_xerror)
+flag_ = 1;
+while norm(delta_xerror)>0.00001
+    qs = trtractconfig(qs,delta_xerror);
+    if norm(qs-qr)>norm(qr-qnear)
+        flag_ = 0;
+        break;
+    end
+    delta_xerror = computertaskerror(qs,pgoal);    
+end
+
+qs2=qs;
+end
+
+function delta_xerror = computertaskerror(qs,pgoal)
+C=eye(6);
+
+C(1,1) = 0;
+C(2,2) = 1;
+C(6,6) = 0;
+
+Tt0=eye(4);
+Tt0(1,4) = pgoal(1);
+Tt0(2,4) = pgoal(2);
+
+Te0 = trans_of_multijoints_full(qs);
+
+T0t=inv(Tt0);
+Tet=T0t*Te0;
+orient_angle=sum(qs);
+
+delta_x=[Tet(1,end) Tet(2,end) Tet(3,end) atan2(Tet(3,2),Tet(3,3)) -asin(Tet(3,1)) atan2(Tet(2,1),Tet(1,1))]'
+delta_xerror=C*delta_x;
+delta_xerror=delta_xerror';
+
+end
+
+function qs1=trtractconfig(qs,delta_xerror)
+Theta1=qs(1);
+Theta2=qs(2);
+Theta3=qs(3);
+J0 = trans3jointsxy_jacobian_full(10,Theta1, Theta2, Theta3)
+Jt=J0;
+%orientation of task frame is yaw =0, pitch=0, roll=0;
+Erpy=eye(6);
+J=Erpy*Jt;
+%Jp=J'*inv(J*J');
+Jp=pinv(J);
+delta_qerr=Jp*delta_xerror';
+qs1=qs-delta_qerr';
 end
 
 
